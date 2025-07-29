@@ -191,218 +191,212 @@ export const ConnectionAnalysis = ({ onNext, onPrevious }: ConnectionAnalysisPro
   const nodeCount = nodes.length;
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-      {/* 左侧工具面板 */}
-      <Card className="xl:col-span-1">
+    <div className="space-y-6">
+      {/* 顶部工具栏 */}
+      <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Network className="w-5 h-5" />
             连接分析工具
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
-          {/* 分析统计 */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between text-sm">
-              <span>检测元件数：</span>
-              <Badge variant="outline">{nodeCount}</Badge>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span>连接关系数：</span>
-              <Badge variant="outline" className="bg-accent text-accent-foreground">
-                {connectionCount}
-              </Badge>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span>分析状态：</span>
-              <Badge variant="outline" className="bg-primary text-primary-foreground">
-                {autoAnalyzing ? "分析中..." : "已完成"}
-              </Badge>
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* 自动分析 */}
-          <div className="space-y-4">
-            <h4 className="text-sm font-medium">自动分析</h4>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="w-full gap-2"
-              onClick={handleAutoAnalyze}
-              disabled={autoAnalyzing}
-            >
-              <RefreshCw className={`w-4 h-4 ${autoAnalyzing ? 'animate-spin' : ''}`} />
-              {autoAnalyzing ? "分析中..." : "重新分析连接"}
-            </Button>
-          </div>
-
-          <Separator />
-
-          {/* 图像控制 */}
-          <div className="space-y-4">
-            <h4 className="text-sm font-medium">图像控制</h4>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={handleZoomOut}>
-                <ZoomOut className="w-4 h-4" />
-              </Button>
-              <div className="flex-1 text-center text-sm py-1">
-                {Math.round(zoom * 100)}%
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            {/* 分析统计 */}
+            <div className="space-y-3">
+              <h4 className="text-sm font-medium">分析统计</h4>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span>检测元件数：</span>
+                  <Badge variant="outline">{nodeCount}</Badge>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span>连接关系数：</span>
+                  <Badge variant="outline" className="bg-accent text-accent-foreground">
+                    {connectionCount}
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span>分析状态：</span>
+                  <Badge variant="outline" className="bg-primary text-primary-foreground">
+                    {autoAnalyzing ? "分析中..." : "已完成"}
+                  </Badge>
+                </div>
               </div>
-              <Button variant="outline" size="sm" onClick={handleZoomIn}>
-                <ZoomIn className="w-4 h-4" />
+            </div>
+
+            {/* 自动分析 */}
+            <div className="space-y-3">
+              <h4 className="text-sm font-medium">自动分析</h4>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full gap-2"
+                onClick={handleAutoAnalyze}
+                disabled={autoAnalyzing}
+              >
+                <RefreshCw className={`w-4 h-4 ${autoAnalyzing ? 'animate-spin' : ''}`} />
+                {autoAnalyzing ? "分析中..." : "重新分析连接"}
               </Button>
             </div>
-          </div>
 
-          <Separator />
-
-          {/* 连接操作提示 */}
-          <div className="space-y-3">
-            <h4 className="text-sm font-medium">操作提示</h4>
-            <div className="text-xs text-muted-foreground space-y-1">
-              <p>• 拖拽节点改变位置</p>
-              <p>• 从节点拖出连线创建连接</p>
-              <p>• 点击连线可删除连接</p>
-              <p>• 点击节点查看详细信息</p>
+            {/* 图像控制 */}
+            <div className="space-y-3">
+              <h4 className="text-sm font-medium">图像控制</h4>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={handleZoomOut}>
+                  <ZoomOut className="w-4 h-4" />
+                </Button>
+                <div className="flex-1 text-center text-sm py-1">
+                  {Math.round(zoom * 100)}%
+                </div>
+                <Button variant="outline" size="sm" onClick={handleZoomIn}>
+                  <ZoomIn className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
-          </div>
 
-          <Separator />
-
-          {/* 操作按钮 */}
-          <div className="space-y-3">
-            <Button 
-              variant="ghost" 
-              onClick={onPrevious} 
-              className="w-full gap-2"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              返回人工校验
-            </Button>
-            
-            <Button 
-              onClick={onNext} 
-              className="w-full gap-2"
-            >
-              <Settings2 className="w-4 h-4" />
-              下一步：线路参数
-            </Button>
+            {/* 操作按钮 */}
+            <div className="space-y-3">
+              <h4 className="text-sm font-medium">操作</h4>
+              <div className="flex gap-2">
+                <Button 
+                  variant="ghost" 
+                  onClick={onPrevious} 
+                  className="flex-1 gap-2"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  返回
+                </Button>
+                <Button 
+                  onClick={onNext} 
+                  className="flex-1 gap-2"
+                >
+                  <Settings2 className="w-4 h-4" />
+                  下一步
+                </Button>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* 中间原始图片区域 */}
-      <Card className="xl:col-span-1.5">
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span className="flex items-center gap-2">
-              <Network className="w-5 h-5" />
-              原始单线图
-            </span>
-            <Badge variant="outline">
-              {nodeCount} 个元件
-            </Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="relative w-full h-[500px] overflow-auto border border-border">
-            <div
-              ref={imageRef}
-              className="relative inline-block min-w-full min-h-full"
-              style={{
-                transform: `scale(${zoom})`,
-                transformOrigin: 'top left'
-              }}
-            >
-              <img
-                src={imageUrl}
-                alt="电力单线图"
-                className="w-full h-auto"
-                draggable={false}
-              />
-              
-              {/* 检测框叠加 */}
-              {mockDetectionResults.map((result) => {
-                const [x1, y1, x2, y2] = result.bbox;
-                const color = componentColors[result.class as keyof typeof componentColors] || "#6b7280";
-                const isSelected = selectedNode === result.id;
+      {/* 主要内容区域 - 2行1列布局 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* 左侧：原始图片区域 */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <Network className="w-5 h-5" />
+                原始单线图
+              </span>
+              <Badge variant="outline">
+                {nodeCount} 个元件
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="relative w-full h-[600px] overflow-auto border border-border">
+              <div
+                ref={imageRef}
+                className="relative inline-block min-w-full min-h-full"
+                style={{
+                  transform: `scale(${zoom})`,
+                  transformOrigin: 'top left'
+                }}
+              >
+                <img
+                  src={imageUrl}
+                  alt="电力单线图"
+                  className="w-full h-auto"
+                  draggable={false}
+                />
                 
-                return (
-                  <div
-                    key={result.id}
-                    className={`absolute border-2 cursor-pointer transition-all duration-200 ${
-                      isSelected ? 'border-4 ring-2 ring-primary ring-opacity-50' : 'border-2'
-                    }`}
-                    style={{
-                      left: x1,
-                      top: y1,
-                      width: x2 - x1,
-                      height: y2 - y1,
-                      borderColor: color,
-                      backgroundColor: `${color}20`
-                    }}
-                    onClick={() => setSelectedNode(isSelected ? null : result.id)}
-                  >
-                    {/* 标签 */}
+                {/* 检测框叠加 */}
+                {mockDetectionResults.map((result) => {
+                  const [x1, y1, x2, y2] = result.bbox;
+                  const color = componentColors[result.class as keyof typeof componentColors] || "#6b7280";
+                  const isSelected = selectedNode === result.id;
+                  
+                  return (
                     <div
-                      className="absolute -top-6 left-0 px-2 py-1 text-xs text-white rounded"
-                      style={{ backgroundColor: color }}
+                      key={result.id}
+                      className={`absolute border-2 cursor-pointer transition-all duration-200 ${
+                        isSelected ? 'border-4 ring-2 ring-primary ring-opacity-50' : 'border-2'
+                      }`}
+                      style={{
+                        left: x1,
+                        top: y1,
+                        width: x2 - x1,
+                        height: y2 - y1,
+                        borderColor: color,
+                        backgroundColor: `${color}20`
+                      }}
+                      onClick={() => setSelectedNode(isSelected ? null : result.id)}
                     >
-                      {result.class} {result.id}
+                      {/* 标签 */}
+                      <div
+                        className="absolute -top-6 left-0 px-2 py-1 text-xs text-white rounded"
+                        style={{ backgroundColor: color }}
+                      >
+                        {result.class} {result.id}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
-      {/* 右侧抽象连接关系图 */}
-      <Card className="xl:col-span-1.5">
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span className="flex items-center gap-2">
-              <Network className="w-5 h-5" />
-              网络拓扑图
-            </span>
-            <Badge variant="outline">
-              {connectionCount} 个连接
-            </Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="w-full h-[500px] border border-border rounded-b-lg">
-            <ReactFlow
-              nodes={nodes}
-              edges={edges}
-              onNodesChange={onNodesChange}
-              onEdgesChange={onEdgesChange}
-              onConnect={onConnect}
-              onNodeClick={onNodeClick}
-              onEdgeClick={onEdgeClick}
-              fitView
-              attributionPosition="bottom-right"
-              style={{ backgroundColor: "#f8fafc" }}
-            >
-              <Controls />
-              <MiniMap 
-                zoomable 
-                pannable 
-                style={{ backgroundColor: "#f1f5f9" }}
-              />
-              <Background 
-                variant={BackgroundVariant.Dots} 
-                gap={20} 
-                size={1} 
-                color="#e2e8f0"
-              />
-            </ReactFlow>
-          </div>
-        </CardContent>
-      </Card>
+        {/* 右侧：抽象连接关系图 */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <Network className="w-5 h-5" />
+                网络拓扑图
+              </span>
+              <Badge variant="outline">
+                {connectionCount} 个连接
+              </Badge>
+            </CardTitle>
+            <div className="text-xs text-muted-foreground mt-2">
+              • 拖拽节点改变位置 • 从节点拖出连线创建连接 • 点击连线可删除连接
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="w-full h-[600px] border border-border rounded-b-lg">
+              <ReactFlow
+                nodes={nodes}
+                edges={edges}
+                onNodesChange={onNodesChange}
+                onEdgesChange={onEdgesChange}
+                onConnect={onConnect}
+                onNodeClick={onNodeClick}
+                onEdgeClick={onEdgeClick}
+                fitView
+                attributionPosition="bottom-right"
+                style={{ backgroundColor: "#f8fafc" }}
+              >
+                <Controls />
+                <MiniMap 
+                  zoomable 
+                  pannable 
+                  style={{ backgroundColor: "#f1f5f9" }}
+                />
+                <Background 
+                  variant={BackgroundVariant.Dots} 
+                  gap={20} 
+                  size={1} 
+                  color="#e2e8f0"
+                />
+              </ReactFlow>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
