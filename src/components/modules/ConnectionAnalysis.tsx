@@ -1,26 +1,32 @@
-import { useState } from "react";
+import { useState, useCallback, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { 
-  Network, 
-  Zap, 
-  Edit3, 
-  Eye, 
-  Play,
-  GitBranch,
-  ArrowRight 
-} from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { Network, ArrowLeft, Settings2, ZoomIn, ZoomOut, RefreshCw } from "lucide-react";
+import {
+  ReactFlow,
+  MiniMap,
+  Controls,
+  Background,
+  useNodesState,
+  useEdgesState,
+  addEdge,
+  Connection,
+  Edge,
+  Node,
+  MarkerType,
+  BackgroundVariant
+} from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
 
-interface Connection {
-  id: string;
-  from: string;
-  to: string;
-  fromType: string;
-  toType: string;
-  busName: string;
+interface DetectionResult {
+  class: string;
   confidence: number;
+  bbox: [number, number, number, number];
+  id: string;
+  verified?: boolean;
+  corrected?: boolean;
 }
 
 interface ConnectionAnalysisProps {
@@ -28,228 +34,373 @@ interface ConnectionAnalysisProps {
   onPrevious: () => void;
 }
 
+// 模拟从人工校验步骤传来的元件数据
+const mockDetectionResults: DetectionResult[] = [
+  { class: "电源", confidence: 0.96, bbox: [50, 100, 120, 140], id: "s1", verified: true },
+  { class: "变压器", confidence: 0.95, bbox: [100, 150, 200, 250], id: "t1", verified: true },
+  { class: "断路器", confidence: 0.88, bbox: [300, 200, 350, 280], id: "b1", verified: true },
+  { class: "节点", confidence: 0.92, bbox: [450, 180, 470, 200], id: "n1", verified: true },
+  { class: "PT变压器", confidence: 0.83, bbox: [500, 300, 580, 350], id: "pt1", verified: true },
+  { class: "开关", confidence: 0.79, bbox: [250, 350, 290, 380], id: "sw1", verified: true }
+];
+
+const componentColors = {
+  "电源": "#ef4444",
+  "变压器": "#3b82f6", 
+  "PT变压器": "#8b5cf6",
+  "断路器": "#f59e0b",
+  "开关": "#10b981",
+  "节点": "#ec4899"
+};
+
+// 初始节点数据
+const initialNodes: Node[] = [
+  {
+    id: 's1',
+    type: 'input',
+    position: { x: 100, y: 50 },
+    data: { label: '电源 S1', type: '电源' },
+    style: { backgroundColor: '#ef444420', borderColor: '#ef4444', borderWidth: 2 }
+  },
+  {
+    id: 't1',
+    type: 'default',
+    position: { x: 300, y: 150 },
+    data: { label: '变压器 T1', type: '变压器' },
+    style: { backgroundColor: '#3b82f620', borderColor: '#3b82f6', borderWidth: 2 }
+  },
+  {
+    id: 'b1',
+    type: 'default',
+    position: { x: 500, y: 100 },
+    data: { label: '断路器 B1', type: '断路器' },
+    style: { backgroundColor: '#f59e0b20', borderColor: '#f59e0b', borderWidth: 2 }
+  },
+  {
+    id: 'n1',
+    type: 'default',
+    position: { x: 700, y: 50 },
+    data: { label: '节点 N1', type: '节点' },
+    style: { backgroundColor: '#ec489920', borderColor: '#ec4899', borderWidth: 2 }
+  },
+  {
+    id: 'pt1',
+    type: 'default',
+    position: { x: 500, y: 300 },
+    data: { label: 'PT变压器 PT1', type: 'PT变压器' },
+    style: { backgroundColor: '#8b5cf620', borderColor: '#8b5cf6', borderWidth: 2 }
+  },
+  {
+    id: 'sw1',
+    type: 'default',
+    position: { x: 300, y: 350 },
+    data: { label: '开关 SW1', type: '开关' },
+    style: { backgroundColor: '#10b98120', borderColor: '#10b981', borderWidth: 2 }
+  }
+];
+
+// 初始连接数据
+const initialEdges: Edge[] = [
+  {
+    id: 'e1',
+    source: 's1',
+    target: 't1',
+    type: 'smoothstep',
+    markerEnd: { type: MarkerType.ArrowClosed },
+    style: { stroke: '#6b7280', strokeWidth: 2 }
+  },
+  {
+    id: 'e2',
+    source: 't1',
+    target: 'b1',
+    type: 'smoothstep',
+    markerEnd: { type: MarkerType.ArrowClosed },
+    style: { stroke: '#6b7280', strokeWidth: 2 }
+  },
+  {
+    id: 'e3',
+    source: 'b1',
+    target: 'n1',
+    type: 'smoothstep',
+    markerEnd: { type: MarkerType.ArrowClosed },
+    style: { stroke: '#6b7280', strokeWidth: 2 }
+  },
+  {
+    id: 'e4',
+    source: 't1',
+    target: 'pt1',
+    type: 'smoothstep',
+    markerEnd: { type: MarkerType.ArrowClosed },
+    style: { stroke: '#6b7280', strokeWidth: 2 }
+  },
+  {
+    id: 'e5',
+    source: 'sw1',
+    target: 'pt1',
+    type: 'smoothstep',
+    markerEnd: { type: MarkerType.ArrowClosed },
+    style: { stroke: '#6b7280', strokeWidth: 2 }
+  }
+];
+
 export const ConnectionAnalysis = ({ onNext, onPrevious }: ConnectionAnalysisProps) => {
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [connections, setConnections] = useState<Connection[]>([]);
-  const [selectedConnection, setSelectedConnection] = useState<string | null>(null);
+  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const [selectedNode, setSelectedNode] = useState<string | null>(null);
+  const [zoom, setZoom] = useState(1);
+  const [autoAnalyzing, setAutoAnalyzing] = useState(false);
+  const imageRef = useRef<HTMLDivElement>(null);
 
-  // 模拟连接数据
-  const mockConnections: Connection[] = [
-    { id: "c1", from: "电源_s1", to: "断路器_b1", fromType: "电源", toType: "断路器", busName: "母线_001", confidence: 0.95 },
-    { id: "c2", from: "断路器_b1", to: "变压器_t1", fromType: "断路器", toType: "变压器", busName: "母线_002", confidence: 0.92 },
-    { id: "c3", from: "变压器_t1", to: "节点_n1", fromType: "变压器", toType: "节点", busName: "母线_003", confidence: 0.88 },
-    { id: "c4", from: "节点_n1", to: "PT变压器_pt1", fromType: "节点", toType: "PT变压器", busName: "母线_004", confidence: 0.85 },
-    { id: "c5", from: "节点_n1", to: "开关_sw1", fromType: "节点", toType: "开关", busName: "母线_005", confidence: 0.90 }
-  ];
+  // 模拟图片URL
+  const imageUrl = "/lovable-uploads/8a7707f8-31a0-4b32-a8ae-a45e9ddf5e66.png";
 
-  const handleStartAnalysis = async () => {
-    setIsAnalyzing(true);
-    
-    // 模拟分析过程
+  const onConnect = useCallback(
+    (params: Connection) => setEdges((eds) => addEdge({
+      ...params,
+      type: 'smoothstep',
+      markerEnd: { type: MarkerType.ArrowClosed },
+      style: { stroke: '#6b7280', strokeWidth: 2 }
+    }, eds)),
+    [setEdges],
+  );
+
+  const handleAutoAnalyze = () => {
+    setAutoAnalyzing(true);
+    // 模拟自动分析过程
     setTimeout(() => {
-      setConnections(mockConnections);
-      setIsAnalyzing(false);
+      setAutoAnalyzing(false);
     }, 2000);
   };
 
-  const getConfidenceColor = (confidence: number) => {
-    if (confidence >= 0.9) return "text-accent";
-    if (confidence >= 0.8) return "text-primary";
-    return "text-warning";
+  const handleDeleteEdge = (edgeId: string) => {
+    setEdges((edges) => edges.filter((edge) => edge.id !== edgeId));
   };
 
-  const getTypeColor = (type: string) => {
-    const colors: Record<string, string> = {
-      "电源": "bg-accent/10 text-accent",
-      "变压器": "bg-primary/10 text-primary",
-      "断路器": "bg-warning/10 text-warning",
-      "节点": "bg-secondary text-secondary-foreground",
-      "PT变压器": "bg-purple-100 text-purple-700",
-      "开关": "bg-orange-100 text-orange-700"
-    };
-    return colors[type] || "bg-muted text-muted-foreground";
-  };
+  const handleZoomIn = () => setZoom(prev => Math.min(prev * 1.2, 3));
+  const handleZoomOut = () => setZoom(prev => Math.max(prev / 1.2, 0.5));
+
+  const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
+    setSelectedNode(selectedNode === node.id ? null : node.id);
+  }, [selectedNode]);
+
+  const onEdgeClick = useCallback((_: React.MouseEvent, edge: Edge) => {
+    handleDeleteEdge(edge.id);
+  }, []);
+
+  const connectionCount = edges.length;
+  const nodeCount = nodes.length;
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-      {/* 分析控制面板 */}
+    <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+      {/* 左侧工具面板 */}
       <Card className="xl:col-span-1">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Network className="w-5 h-5" />
-            连接分析
+            连接分析工具
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* 分析状态 */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">分析状态</span>
-              <Badge variant={connections.length > 0 ? "default" : "outline"}>
-                {connections.length > 0 ? "已完成" : "待分析"}
+          {/* 分析统计 */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between text-sm">
+              <span>检测元件数：</span>
+              <Badge variant="outline">{nodeCount}</Badge>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span>连接关系数：</span>
+              <Badge variant="outline" className="bg-accent text-accent-foreground">
+                {connectionCount}
               </Badge>
             </div>
-
-            {connections.length > 0 && (
-              <div className="p-3 bg-primary-soft rounded-lg space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span>检测到连接</span>
-                  <span className="font-medium">{connections.length} 个</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span>生成母线</span>
-                  <span className="font-medium">{new Set(connections.map(c => c.busName)).size} 个</span>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* 分析算法说明 */}
-          <div className="space-y-3">
-            <h4 className="font-medium text-sm flex items-center gap-2">
-              <GitBranch className="w-4 h-4" />
-              分析算法
-            </h4>
-            <div className="text-xs text-muted-foreground space-y-1">
-              <p>• 基于几何位置的连接推理</p>
-              <p>• 最小生成树算法优化</p>
-              <p>• 母线自动命名生成</p>
-              <p>• 连接置信度评估</p>
+            <div className="flex items-center justify-between text-sm">
+              <span>分析状态：</span>
+              <Badge variant="outline" className="bg-primary text-primary-foreground">
+                {autoAnalyzing ? "分析中..." : "已完成"}
+              </Badge>
             </div>
           </div>
+
+          <Separator />
+
+          {/* 自动分析 */}
+          <div className="space-y-4">
+            <h4 className="text-sm font-medium">自动分析</h4>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="w-full gap-2"
+              onClick={handleAutoAnalyze}
+              disabled={autoAnalyzing}
+            >
+              <RefreshCw className={`w-4 h-4 ${autoAnalyzing ? 'animate-spin' : ''}`} />
+              {autoAnalyzing ? "分析中..." : "重新分析连接"}
+            </Button>
+          </div>
+
+          <Separator />
+
+          {/* 图像控制 */}
+          <div className="space-y-4">
+            <h4 className="text-sm font-medium">图像控制</h4>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={handleZoomOut}>
+                <ZoomOut className="w-4 h-4" />
+              </Button>
+              <div className="flex-1 text-center text-sm py-1">
+                {Math.round(zoom * 100)}%
+              </div>
+              <Button variant="outline" size="sm" onClick={handleZoomIn}>
+                <ZoomIn className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* 连接操作提示 */}
+          <div className="space-y-3">
+            <h4 className="text-sm font-medium">操作提示</h4>
+            <div className="text-xs text-muted-foreground space-y-1">
+              <p>• 拖拽节点改变位置</p>
+              <p>• 从节点拖出连线创建连接</p>
+              <p>• 点击连线可删除连接</p>
+              <p>• 点击节点查看详细信息</p>
+            </div>
+          </div>
+
+          <Separator />
 
           {/* 操作按钮 */}
           <div className="space-y-3">
-            <Button
-              onClick={handleStartAnalysis}
-              disabled={isAnalyzing || connections.length > 0}
+            <Button 
+              variant="ghost" 
+              onClick={onPrevious} 
               className="w-full gap-2"
             >
-              <Play className="w-4 h-4" />
-              {isAnalyzing ? "分析中..." : "开始连接分析"}
+              <ArrowLeft className="w-4 h-4" />
+              返回人工校验
             </Button>
-
-            {connections.length > 0 && (
-              <Button
-                variant="outline"
-                onClick={onNext}
-                className="w-full gap-2"
-              >
-                <ArrowRight className="w-4 h-4" />
-                下一步：线路参数
-              </Button>
-            )}
-
-            <Button
-              variant="ghost"
-              onClick={onPrevious}
-              className="w-full"
+            
+            <Button 
+              onClick={onNext} 
+              className="w-full gap-2"
             >
-              返回上一步
+              <Settings2 className="w-4 h-4" />
+              下一步：线路参数
             </Button>
           </div>
         </CardContent>
       </Card>
 
-      {/* 连接结果展示 */}
-      <Card className="xl:col-span-2">
+      {/* 中间原始图片区域 */}
+      <Card className="xl:col-span-1.5">
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <span className="flex items-center gap-2">
-              <Eye className="w-5 h-5" />
-              连接关系图
+              <Network className="w-5 h-5" />
+              原始单线图
             </span>
-            {connections.length > 0 && (
-              <Badge variant="outline">
-                {connections.length} 个连接
-              </Badge>
-            )}
+            <Badge variant="outline">
+              {nodeCount} 个元件
+            </Badge>
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          {connections.length > 0 ? (
-            <div className="space-y-6">
-              {/* 网络拓扑可视化区域 */}
-              <div className="bg-muted rounded-lg p-6 min-h-[300px] flex items-center justify-center">
-                <div className="text-center">
-                  <Network className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">网络拓扑图可视化</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    显示元件连接关系和母线结构
-                  </p>
-                </div>
-              </div>
+        <CardContent className="p-0">
+          <div className="relative w-full h-[500px] overflow-auto border border-border">
+            <div
+              ref={imageRef}
+              className="relative inline-block min-w-full min-h-full"
+              style={{
+                transform: `scale(${zoom})`,
+                transformOrigin: 'top left'
+              }}
+            >
+              <img
+                src={imageUrl}
+                alt="电力单线图"
+                className="w-full h-auto"
+                draggable={false}
+              />
+              
+              {/* 检测框叠加 */}
+              {mockDetectionResults.map((result) => {
+                const [x1, y1, x2, y2] = result.bbox;
+                const color = componentColors[result.class as keyof typeof componentColors] || "#6b7280";
+                const isSelected = selectedNode === result.id;
+                
+                return (
+                  <div
+                    key={result.id}
+                    className={`absolute border-2 cursor-pointer transition-all duration-200 ${
+                      isSelected ? 'border-4 ring-2 ring-primary ring-opacity-50' : 'border-2'
+                    }`}
+                    style={{
+                      left: x1,
+                      top: y1,
+                      width: x2 - x1,
+                      height: y2 - y1,
+                      borderColor: color,
+                      backgroundColor: `${color}20`
+                    }}
+                    onClick={() => setSelectedNode(isSelected ? null : result.id)}
+                  >
+                    {/* 标签 */}
+                    <div
+                      className="absolute -top-6 left-0 px-2 py-1 text-xs text-white rounded"
+                      style={{ backgroundColor: color }}
+                    >
+                      {result.class} {result.id}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-              {/* 连接关系列表 */}
-              <div className="space-y-3">
-                <h4 className="font-medium text-sm">连接关系详情</h4>
-                <div className="border rounded-lg overflow-hidden">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>起始元件</TableHead>
-                        <TableHead>目标元件</TableHead>
-                        <TableHead>母线名称</TableHead>
-                        <TableHead>置信度</TableHead>
-                        <TableHead>操作</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {connections.map((connection) => (
-                        <TableRow 
-                          key={connection.id}
-                          className={selectedConnection === connection.id ? "bg-muted" : ""}
-                        >
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <Badge variant="outline" className={getTypeColor(connection.fromType)}>
-                                {connection.fromType}
-                              </Badge>
-                              <span className="text-sm">{connection.from}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <Badge variant="outline" className={getTypeColor(connection.toType)}>
-                                {connection.toType}
-                              </Badge>
-                              <span className="text-sm">{connection.to}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="secondary">{connection.busName}</Badge>
-                          </TableCell>
-                          <TableCell>
-                            <span className={`font-medium ${getConfidenceColor(connection.confidence)}`}>
-                              {(connection.confidence * 100).toFixed(1)}%
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setSelectedConnection(
-                                selectedConnection === connection.id ? null : connection.id
-                              )}
-                            >
-                              <Edit3 className="w-4 h-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="flex items-center justify-center h-96 text-muted-foreground">
-              <div className="text-center">
-                <Network className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                <p>点击"开始连接分析"进行元件连接关系分析</p>
-              </div>
-            </div>
-          )}
+      {/* 右侧抽象连接关系图 */}
+      <Card className="xl:col-span-1.5">
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <span className="flex items-center gap-2">
+              <Network className="w-5 h-5" />
+              网络拓扑图
+            </span>
+            <Badge variant="outline">
+              {connectionCount} 个连接
+            </Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="w-full h-[500px] border border-border rounded-b-lg">
+            <ReactFlow
+              nodes={nodes}
+              edges={edges}
+              onNodesChange={onNodesChange}
+              onEdgesChange={onEdgesChange}
+              onConnect={onConnect}
+              onNodeClick={onNodeClick}
+              onEdgeClick={onEdgeClick}
+              fitView
+              attributionPosition="bottom-right"
+              style={{ backgroundColor: "#f8fafc" }}
+            >
+              <Controls />
+              <MiniMap 
+                zoomable 
+                pannable 
+                style={{ backgroundColor: "#f1f5f9" }}
+              />
+              <Background 
+                variant={BackgroundVariant.Dots} 
+                gap={20} 
+                size={1} 
+                color="#e2e8f0"
+              />
+            </ReactFlow>
+          </div>
         </CardContent>
       </Card>
     </div>
