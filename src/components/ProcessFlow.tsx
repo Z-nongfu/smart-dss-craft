@@ -30,37 +30,44 @@ export const ProcessFlow = ({ currentStep, onStepClick }: ProcessFlowProps) => {
     {
       id: 1,
       title: "图像检测",
-      description: "元件识别与人工校正",
+      description: "YOLO模型元件识别",
       icon: Camera,
       status: currentStep > 1 ? "completed" : currentStep === 1 ? "current" : "pending"
     },
     {
       id: 2,
-      title: "连接分析",
-      description: "电气连接关系分析",
-      icon: Network,
+      title: "人工校验",
+      description: "元件识别结果校验",
+      icon: CheckCircle,
       status: currentStep > 2 ? "completed" : currentStep === 2 ? "current" : "pending"
     },
     {
       id: 3,
-      title: "线路参数设置",
-      description: "线路电气参数配置",
-      icon: Settings2,
+      title: "连接分析",
+      description: "电气连接关系分析",
+      icon: Network,
       status: currentStep > 3 ? "completed" : currentStep === 3 ? "current" : "pending"
     },
     {
       id: 4,
-      title: "变压器负荷参数设置",
-      description: "变压器和负荷参数",
-      icon: Zap,
+      title: "线路参数设置",
+      description: "线路电气参数配置",
+      icon: Settings2,
       status: currentStep > 4 ? "completed" : currentStep === 4 ? "current" : "pending"
     },
     {
       id: 5,
+      title: "变压器负荷参数设置",
+      description: "变压器和负荷参数",
+      icon: Zap,
+      status: currentStep > 5 ? "completed" : currentStep === 5 ? "current" : "pending"
+    },
+    {
+      id: 6,
       title: "生成模型",
       description: "OpenDSS模型输出",
       icon: FileOutput,
-      status: currentStep > 5 ? "completed" : currentStep === 5 ? "current" : "pending"
+      status: currentStep > 6 ? "completed" : currentStep === 6 ? "current" : "pending"
     }
   ];
 

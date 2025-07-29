@@ -152,7 +152,7 @@ export const ImageDetection = ({
 
             {results.length > 0 && <Button variant="outline" onClick={onNext} className="w-full gap-2">
                 <Eye className="w-4 h-4" />
-                下一步：连接分析
+                下一步：人工校验
               </Button>}
           </div>
         </CardContent>
@@ -180,9 +180,21 @@ export const ImageDetection = ({
 
               {/* 检测结果列表 */}
               {filteredResults.length > 0 && <div className="space-y-3">
-                  
+                  <h4 className="text-sm font-medium text-foreground">检测结果列表</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto">
-                    {filteredResults.map(result => {})}
+                    {filteredResults.map(result => (
+                      <div key={result.id} className="p-3 bg-card border border-border rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-medium text-sm">{result.class}</span>
+                          <Badge variant="outline" className={getConfidenceColor(result.confidence)}>
+                            {(result.confidence * 100).toFixed(1)}%
+                          </Badge>
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          位置: [{result.bbox.join(', ')}]
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>}
             </div> : <div className="flex items-center justify-center h-96 text-muted-foreground">

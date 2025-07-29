@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Header } from "@/components/Header";
 import { ProcessFlow } from "@/components/ProcessFlow";
 import { ImageDetection } from "@/components/modules/ImageDetection";
+import { ManualVerification } from "@/components/modules/ManualVerification";
 import { ConnectionAnalysis } from "@/components/modules/ConnectionAnalysis";
 import { LineParameters } from "@/components/modules/LineParameters";
 import { Card, CardContent } from "@/components/ui/card";
@@ -29,7 +30,7 @@ const Index = () => {
   };
 
   const handleNext = () => {
-    if (currentStep < 5) {
+    if (currentStep < 6) {
       setCurrentStep(currentStep + 1);
       toast({
         title: "步骤完成",
@@ -78,12 +79,14 @@ const Index = () => {
       case 1:
         return <ImageDetection onNext={handleNext} />;
       case 2:
-        return <ConnectionAnalysis onNext={handleNext} onPrevious={handlePrevious} />;
+        return <ManualVerification onNext={handleNext} onPrevious={handlePrevious} />;
       case 3:
-        return <LineParameters onNext={handleNext} onPrevious={handlePrevious} />;
+        return <ConnectionAnalysis onNext={handleNext} onPrevious={handlePrevious} />;
       case 4:
-        return <TransformerLoadModule onNext={handleNext} onPrevious={handlePrevious} />;
+        return <LineParameters onNext={handleNext} onPrevious={handlePrevious} />;
       case 5:
+        return <TransformerLoadModule onNext={handleNext} onPrevious={handlePrevious} />;
+      case 6:
         return <ModelGeneration onPrevious={handlePrevious} />;
       default:
         return <ImageDetection onNext={handleNext} />;
@@ -119,7 +122,7 @@ const Index = () => {
                 状态：就绪
               </Badge>
               <span className="text-sm text-muted-foreground">
-                当前步骤：第 {currentStep} 步 / 共 5 步
+                当前步骤：第 {currentStep} 步 / 共 6 步
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -127,11 +130,11 @@ const Index = () => {
               <div className="w-32 h-2 bg-muted rounded-full overflow-hidden">
                 <div 
                   className="h-full bg-gradient-primary transition-all duration-500"
-                  style={{ width: `${(currentStep / 5) * 100}%` }}
+                  style={{ width: `${(currentStep / 6) * 100}%` }}
                 />
               </div>
               <span className="text-sm font-medium">
-                {Math.round((currentStep / 5) * 100)}%
+                {Math.round((currentStep / 6) * 100)}%
               </span>
             </div>
           </div>
